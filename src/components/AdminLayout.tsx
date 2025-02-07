@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Users, Store } from 'lucide-react';
+import { Users, Store, LogOut } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 
 const AdminLayout = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { signOut } = useAuth();
 
   const navigation = [
     { name: 'Users', href: '/admin/users', icon: Users },
@@ -41,6 +44,14 @@ const AdminLayout = () => {
                   </Link>
                 );
               })}
+              <Button
+                variant="ghost"
+                className="w-full justify-start"
+                onClick={signOut}
+              >
+                <LogOut className="mr-3 h-6 w-6" />
+                Logout
+              </Button>
             </nav>
           </div>
         </div>
