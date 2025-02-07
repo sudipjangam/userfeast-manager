@@ -17,6 +17,7 @@ interface Profile {
   last_name: string | null;
   role: string;
   created_at: string;
+  restaurant_id: string | null;
 }
 
 const Users = () => {
@@ -34,12 +35,16 @@ const Users = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('profiles')
-        .select('*');
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       setUsers(data || []);
     } catch (error) {
+      console.error('Error fetching users:', error);
       toast({
         variant: "destructive",
         title: "Error fetching users",
@@ -69,25 +74,26 @@ const Users = () => {
         />
       </div>
 
-      <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+      <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Role</TableHead>
+              <TableHead>Restaurant ID</TableHead>
               <TableHead>Created At</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center">
+                <TableCell colSpan={4} className="text-center">
                   Loading...
                 </TableCell>
               </TableRow>
             ) : filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center">
+                <TableCell colSpan={4} className="text-center">
                   No users found
                 </TableCell>
               </TableRow>
@@ -98,6 +104,7 @@ const Users = () => {
                     {[user.first_name, user.last_name].filter(Boolean).join(' ') || 'N/A'}
                   </TableCell>
                   <TableCell className="capitalize">{user.role}</TableCell>
+                  <TableCell>{user.restaurant_id || 'N/A'}</TableCell>
                   <TableCell>
                     {new Date(user.created_at).toLocaleDateString()}
                   </TableCell>
