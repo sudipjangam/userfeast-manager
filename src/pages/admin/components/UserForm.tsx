@@ -23,6 +23,8 @@ export interface UserFormData {
   first_name: string;
   last_name: string;
   role: string;
+  email?: string;
+  password?: string;
   restaurant_name?: string;
   restaurant_address?: string;
   restaurant_email?: string;
@@ -49,6 +51,8 @@ export const UserForm = ({ onSubmit, onCancel, editingUser }: UserFormProps) => 
       first_name: '',
       last_name: '',
       role: 'manager',
+      email: '',
+      password: '',
       restaurant_name: '',
       restaurant_address: '',
       restaurant_email: '',
@@ -62,6 +66,36 @@ export const UserForm = ({ onSubmit, onCancel, editingUser }: UserFormProps) => 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-700">User Information</h3>
+            {!editingUser && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" required {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" required {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
             <FormField
               control={form.control}
               name="first_name"

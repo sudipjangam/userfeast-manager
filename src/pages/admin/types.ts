@@ -21,6 +21,8 @@ export interface UserFormData {
   first_name: string;
   last_name: string;
   role: string;
+  email?: string;
+  password?: string;
   restaurant_name?: string;
   restaurant_address?: string;
   restaurant_email?: string;

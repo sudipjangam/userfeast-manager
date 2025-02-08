@@ -70,18 +70,25 @@ const Users = () => {
         restaurantId = restaurant.id;
       }
 
-      // Generate a UUID for the profile
-      const { data: newProfile, error: profileError } = await supabase
+      // Create auth user first
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: data.email,
+        password: data.password,
+        email_confirm: true
+      });
+
+      if (authError) throw authError;
+
+      // Then create the profile
+      const { error: profileError } = await supabase
         .from('profiles')
-        .insert([{
-          id: crypto.randomUUID(), // Generate a UUID for the profile
+        .update({
           first_name: data.first_name,
           last_name: data.last_name,
           role: data.role,
           restaurant_id: restaurantId,
-        }])
-        .select()
-        .single();
+        })
+        .eq('id', authData.user.id);
 
       if (profileError) throw profileError;
 
@@ -172,10 +179,8 @@ const Users = () => {
     if (!confirm('Are you sure you want to delete this user?')) return;
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', id);
+      // Delete the auth user (this will cascade to the profile)
+      const { error } = await supabase.auth.admin.deleteUser(id);
 
       if (error) throw error;
 
