@@ -70,14 +70,18 @@ const Users = () => {
         restaurantId = restaurant.id;
       }
 
-      const { error: profileError } = await supabase
+      // Generate a UUID for the profile
+      const { data: newProfile, error: profileError } = await supabase
         .from('profiles')
         .insert([{
+          id: crypto.randomUUID(), // Generate a UUID for the profile
           first_name: data.first_name,
           last_name: data.last_name,
           role: data.role,
           restaurant_id: restaurantId,
-        }]);
+        }])
+        .select()
+        .single();
 
       if (profileError) throw profileError;
 
@@ -89,6 +93,7 @@ const Users = () => {
       fetchUsers();
       setIsDialogOpen(false);
     } catch (error) {
+      console.error('Error creating user:', error);
       toast({
         variant: "destructive",
         title: "Error creating user",
