@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Input } from "@/components/ui/input";
@@ -16,7 +17,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -40,6 +40,12 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 interface Profile {
   id: string;
@@ -48,13 +54,25 @@ interface Profile {
   role: string;
   created_at: string;
   restaurant_id: string | null;
+  restaurant?: Restaurant | null;
+}
+
+interface Restaurant {
+  id: string;
+  name: string;
+  address: string | null;
+  email: string | null;
+  phone: string | null;
 }
 
 interface UserFormData {
   first_name: string;
   last_name: string;
   role: string;
-  restaurant_id?: string;
+  restaurant_name?: string;
+  restaurant_address?: string;
+  restaurant_email?: string;
+  restaurant_phone?: string;
 }
 
 const Users = () => {
@@ -73,13 +91,16 @@ const Users = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('*')
+        .select(`
+          *,
+          restaurant:restaurants(*)
+        `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setUsers(data || []);
+      if (profilesError) throw profilesError;
+      setUsers(profiles || []);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
@@ -94,11 +115,36 @@ const Users = () => {
 
   const handleCreateUser = async (data: UserFormData) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .insert([data]);
+      let restaurantId = null;
 
-      if (error) throw error;
+      // If restaurant details are provided, create a restaurant first
+      if (data.restaurant_name) {
+        const { data: restaurant, error: restaurantError } = await supabase
+          .from('restaurants')
+          .insert([{
+            name: data.restaurant_name,
+            address: data.restaurant_address,
+            email: data.restaurant_email,
+            phone: data.restaurant_phone,
+          }])
+          .select()
+          .single();
+
+        if (restaurantError) throw restaurantError;
+        restaurantId = restaurant.id;
+      }
+
+      // Create the user profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([{
+          first_name: data.first_name,
+          last_name: data.last_name,
+          role: data.role,
+          restaurant_id: restaurantId,
+        }]);
+
+      if (profileError) throw profileError;
 
       toast({
         title: "User created successfully",
@@ -119,12 +165,54 @@ const Users = () => {
 
   const handleUpdateUser = async (id: string, data: UserFormData) => {
     try {
-      const { error } = await supabase
+      const user = users.find(u => u.id === id);
+      let restaurantId = user?.restaurant_id;
+
+      // Update or create restaurant if details are provided
+      if (data.restaurant_name) {
+        if (restaurantId) {
+          // Update existing restaurant
+          const { error: restaurantError } = await supabase
+            .from('restaurants')
+            .update({
+              name: data.restaurant_name,
+              address: data.restaurant_address,
+              email: data.restaurant_email,
+              phone: data.restaurant_phone,
+            })
+            .eq('id', restaurantId);
+
+          if (restaurantError) throw restaurantError;
+        } else {
+          // Create new restaurant
+          const { data: restaurant, error: restaurantError } = await supabase
+            .from('restaurants')
+            .insert([{
+              name: data.restaurant_name,
+              address: data.restaurant_address,
+              email: data.restaurant_email,
+              phone: data.restaurant_phone,
+            }])
+            .select()
+            .single();
+
+          if (restaurantError) throw restaurantError;
+          restaurantId = restaurant.id;
+        }
+      }
+
+      // Update user profile
+      const { error: profileError } = await supabase
         .from('profiles')
-        .update(data)
+        .update({
+          first_name: data.first_name,
+          last_name: data.last_name,
+          role: data.role,
+          restaurant_id: restaurantId,
+        })
         .eq('id', id);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
 
       toast({
         title: "User updated successfully",
@@ -172,7 +260,8 @@ const Users = () => {
   const filteredUsers = users.filter(user => 
     user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role?.toLowerCase().includes(searchTerm.toLowerCase())
+    user.role?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.restaurant?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const openEditDialog = (user: Profile) => {
@@ -181,7 +270,10 @@ const Users = () => {
       first_name: user.first_name || '',
       last_name: user.last_name || '',
       role: user.role,
-      restaurant_id: user.restaurant_id || undefined,
+      restaurant_name: user.restaurant?.name || '',
+      restaurant_address: user.restaurant?.address || '',
+      restaurant_email: user.restaurant?.email || '',
+      restaurant_phone: user.restaurant?.phone || '',
     });
     setIsDialogOpen(true);
   };
@@ -192,7 +284,10 @@ const Users = () => {
       first_name: '',
       last_name: '',
       role: 'manager',
-      restaurant_id: undefined,
+      restaurant_name: '',
+      restaurant_address: '',
+      restaurant_email: '',
+      restaurant_phone: '',
     });
     setIsDialogOpen(true);
   };
@@ -227,7 +322,7 @@ const Users = () => {
             <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100">
               <TableHead>Name</TableHead>
               <TableHead>Role</TableHead>
-              <TableHead>Restaurant ID</TableHead>
+              <TableHead>Restaurant</TableHead>
               <TableHead>Created At</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -264,13 +359,21 @@ const Users = () => {
                             <p><strong>First Name:</strong> {user.first_name || 'N/A'}</p>
                             <p><strong>Last Name:</strong> {user.last_name || 'N/A'}</p>
                             <p><strong>Role:</strong> {user.role}</p>
+                            {user.restaurant && (
+                              <>
+                                <p><strong>Restaurant:</strong> {user.restaurant.name}</p>
+                                <p><strong>Address:</strong> {user.restaurant.address || 'N/A'}</p>
+                                <p><strong>Email:</strong> {user.restaurant.email || 'N/A'}</p>
+                                <p><strong>Phone:</strong> {user.restaurant.phone || 'N/A'}</p>
+                              </>
+                            )}
                           </div>
                         </div>
                       </HoverCardContent>
                     </HoverCard>
                   </TableCell>
                   <TableCell className="capitalize">{user.role}</TableCell>
-                  <TableCell>{user.restaurant_id || 'N/A'}</TableCell>
+                  <TableCell>{user.restaurant?.name || 'N/A'}</TableCell>
                   <TableCell>
                     {new Date(user.created_at).toLocaleDateString()}
                   </TableCell>
@@ -300,7 +403,7 @@ const Users = () => {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>
               {editingUser ? 'Edit User' : 'Create New User'}
@@ -312,56 +415,118 @@ const Users = () => {
               handleCreateUser)} 
               className="space-y-4"
             >
-              <FormField
-                control={form.control}
-                name="first_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>First Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="last_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Last Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Role</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a role" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="manager">Manager</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <Tabs defaultValue="user" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="user">User Details</TabsTrigger>
+                  <TabsTrigger value="restaurant">Restaurant Details</TabsTrigger>
+                </TabsList>
+                <TabsContent value="user" className="space-y-4 mt-4">
+                  <FormField
+                    control={form.control}
+                    name="first_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>First Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="last_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Last Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="role"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Role</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a role" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="manager">Manager</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </TabsContent>
+                <TabsContent value="restaurant" className="space-y-4 mt-4">
+                  <FormField
+                    control={form.control}
+                    name="restaurant_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Restaurant Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="restaurant_address"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Address</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="restaurant_email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="restaurant_phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone</FormLabel>
+                        <FormControl>
+                          <Input type="tel" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </TabsContent>
+              </Tabs>
               <div className="flex justify-end gap-4 pt-4">
                 <Button
                   type="button"
