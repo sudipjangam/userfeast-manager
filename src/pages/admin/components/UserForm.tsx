@@ -17,12 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
 import { Profile } from "../types";
 
 export interface UserFormData {
@@ -64,13 +58,10 @@ export const UserForm = ({ onSubmit, onCancel, editingUser }: UserFormProps) => 
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <Tabs defaultValue="user" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="user">User Details</TabsTrigger>
-            <TabsTrigger value="restaurant">Restaurant Details</TabsTrigger>
-          </TabsList>
-          <TabsContent value="user" className="space-y-4 mt-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-700">User Information</h3>
             <FormField
               control={form.control}
               name="first_name"
@@ -121,8 +112,10 @@ export const UserForm = ({ onSubmit, onCancel, editingUser }: UserFormProps) => 
                 </FormItem>
               )}
             />
-          </TabsContent>
-          <TabsContent value="restaurant" className="space-y-4 mt-4">
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-700">Restaurant Information</h3>
             <FormField
               control={form.control}
               name="restaurant_name"
@@ -175,8 +168,9 @@ export const UserForm = ({ onSubmit, onCancel, editingUser }: UserFormProps) => 
                 </FormItem>
               )}
             />
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
+
         <div className="flex justify-end gap-4 pt-4">
           <Button
             type="button"
