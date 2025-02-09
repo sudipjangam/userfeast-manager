@@ -92,18 +92,22 @@ const Restaurants = () => {
         .from('restaurants')
         .select(`
           *,
-          subscription:restaurant_subscriptions(
+          subscription:restaurant_subscriptions!restaurant_id(
             *,
             plan:subscription_plans(*)
           )
-        `)
-        .order('created_at', { ascending: false });
+        `);
 
       if (error) throw error;
-      setRestaurants(data.map(restaurant => ({
+
+      // Map the data to handle the subscription array
+      const mappedData = data?.map(restaurant => ({
         ...restaurant,
-        subscription: restaurant.subscription?.[0]
-      })) || []);
+        subscription: restaurant.subscription?.[0] || null
+      })) || [];
+
+      console.log('Fetched restaurants:', mappedData); // Debug log
+      setRestaurants(mappedData);
     } catch (error) {
       toast({
         variant: "destructive",
