@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Input } from "@/components/ui/input";
@@ -49,6 +50,7 @@ const Restaurants = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubscriptionDialogOpen, setIsSubscriptionDialogOpen] = useState(false);
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
+  const [editingRestaurant, setEditingRestaurant] = useState<Restaurant | null>(null);
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
   const { toast } = useToast();
   const form = useForm<RestaurantFormData>();
@@ -249,7 +251,7 @@ const Restaurants = () => {
       return (
         <HoverCard>
           <HoverCardTrigger>
-            <Badge variant="success" className="bg-green-500">
+            <Badge variant="outline" className="bg-green-500 text-white hover:bg-green-600">
               Active until {endDate.toLocaleDateString()}
             </Badge>
           </HoverCardTrigger>
@@ -285,7 +287,7 @@ const Restaurants = () => {
     setEditingRestaurant(restaurant);
     form.reset({
       name: restaurant.name,
-      address: restaurant.address,
+      address: restaurant.address || '',
       email: restaurant.email || '',
       phone: restaurant.phone || '',
     });

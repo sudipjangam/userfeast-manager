@@ -15,6 +15,7 @@ export interface Restaurant {
   address: string | null;
   email: string | null;
   phone: string | null;
+  created_at: string;
   subscription?: RestaurantSubscription;
 }
 
