@@ -27,14 +27,21 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-import { Pencil, Trash2, Plus, CreditCard } from 'lucide-react';
+import { Pencil, Trash2, Plus, CreditCard, Info } from 'lucide-react';
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { Restaurant, SubscriptionPlan } from './types';
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface RestaurantFormData {
   name: string;
@@ -241,7 +248,14 @@ const Restaurants = () => {
 
   const getSubscriptionStatus = (restaurant: Restaurant) => {
     if (!restaurant.subscription) {
-      return <Badge variant="destructive">No Subscription</Badge>;
+      return (
+        <Badge 
+          variant="destructive" 
+          className="bg-gradient-to-r from-red-500/80 to-orange-500/80 hover:from-red-600 hover:to-orange-600"
+        >
+          No Subscription
+        </Badge>
+      );
     }
 
     const endDate = new Date(restaurant.subscription.current_period_end);
@@ -251,20 +265,27 @@ const Restaurants = () => {
       return (
         <HoverCard>
           <HoverCardTrigger>
-            <Badge variant="outline" className="bg-green-500 text-white hover:bg-green-600">
+            <Badge 
+              variant="outline" 
+              className="bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600"
+            >
               Active until {endDate.toLocaleDateString()}
             </Badge>
           </HoverCardTrigger>
-          <HoverCardContent>
+          <HoverCardContent className="w-80">
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold">Subscription Details</h4>
-              <p><strong>Plan:</strong> {restaurant.subscription.plan?.name}</p>
-              <p><strong>Price:</strong> ${restaurant.subscription.plan?.price}/
-                {restaurant.subscription.plan?.interval}</p>
-              <p><strong>Features:</strong></p>
+              <h4 className="text-sm font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                Subscription Details
+              </h4>
+              <p className="font-bold text-gray-700">Plan: {restaurant.subscription.plan?.name}</p>
+              <p className="font-bold text-gray-700">
+                Price: ${restaurant.subscription.plan?.price}/
+                {restaurant.subscription.plan?.interval}
+              </p>
+              <p className="font-bold text-gray-700">Features:</p>
               <ul className="list-disc pl-4">
                 {restaurant.subscription.plan?.features.map((feature, index) => (
-                  <li key={index} className="text-sm">{feature}</li>
+                  <li key={index} className="text-sm text-gray-600">{feature}</li>
                 ))}
               </ul>
             </div>
@@ -273,7 +294,14 @@ const Restaurants = () => {
       );
     }
 
-    return <Badge variant="destructive">Expired</Badge>;
+    return (
+      <Badge 
+        variant="destructive"
+        className="bg-gradient-to-r from-red-500/80 to-orange-500/80 hover:from-red-600 hover:to-orange-600"
+      >
+        Expired
+      </Badge>
+    );
   };
 
   const filteredRestaurants = restaurants.filter(restaurant => 
@@ -282,33 +310,6 @@ const Restaurants = () => {
     restaurant.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     restaurant.phone?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const openEditDialog = (restaurant: Restaurant) => {
-    setEditingRestaurant(restaurant);
-    form.reset({
-      name: restaurant.name,
-      address: restaurant.address || '',
-      email: restaurant.email || '',
-      phone: restaurant.phone || '',
-    });
-    setIsDialogOpen(true);
-  };
-
-  const openCreateDialog = () => {
-    setEditingRestaurant(null);
-    form.reset({
-      name: '',
-      address: '',
-      email: '',
-      phone: '',
-    });
-    setIsDialogOpen(true);
-  };
-
-  const openSubscriptionDialog = (restaurant: Restaurant) => {
-    setSelectedRestaurant(restaurant);
-    setIsSubscriptionDialogOpen(true);
-  };
 
   return (
     <div className="space-y-4 p-8 bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen">
@@ -338,13 +339,13 @@ const Restaurants = () => {
         <Table>
           <TableHeader>
             <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100">
-              <TableHead>Name</TableHead>
-              <TableHead>Address</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Subscription</TableHead>
-              <TableHead>Created At</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="font-bold text-gray-700">Name</TableHead>
+              <TableHead className="font-bold text-gray-700">Address</TableHead>
+              <TableHead className="font-bold text-gray-700">Email</TableHead>
+              <TableHead className="font-bold text-gray-700">Phone</TableHead>
+              <TableHead className="font-bold text-gray-700">Subscription</TableHead>
+              <TableHead className="font-bold text-gray-700">Created At</TableHead>
+              <TableHead className="text-right font-bold text-gray-700">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -367,56 +368,118 @@ const Restaurants = () => {
                   className="hover:bg-gray-50 transition-colors"
                 >
                   <TableCell>
-                    <HoverCard>
-                      <HoverCardTrigger className="cursor-pointer">
-                        {restaurant.name}
-                      </HoverCardTrigger>
-                      <HoverCardContent className="w-80">
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-semibold">Restaurant Details</h4>
-                          <div className="text-sm">
-                            <p><strong>ID:</strong> {restaurant.id}</p>
-                            <p><strong>Name:</strong> {restaurant.name}</p>
-                            <p><strong>Address:</strong> {restaurant.address}</p>
-                            <p><strong>Email:</strong> {restaurant.email || 'N/A'}</p>
-                            <p><strong>Phone:</strong> {restaurant.phone || 'N/A'}</p>
-                          </div>
-                        </div>
-                      </HoverCardContent>
-                    </HoverCard>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger className="cursor-pointer font-medium text-gray-700">
+                          {restaurant.name}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Restaurant ID: {restaurant.id}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </TableCell>
-                  <TableCell>{restaurant.address}</TableCell>
-                  <TableCell>{restaurant.email || 'N/A'}</TableCell>
-                  <TableCell>{restaurant.phone || 'N/A'}</TableCell>
+                  <TableCell>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger className="cursor-pointer">
+                          {restaurant.address}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{restaurant.address}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </TableCell>
+                  <TableCell>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger className="cursor-pointer">
+                          {restaurant.email || 'N/A'}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Email: {restaurant.email || 'Not Available'}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </TableCell>
+                  <TableCell>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger className="cursor-pointer">
+                          {restaurant.phone || 'N/A'}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Phone: {restaurant.phone || 'Not Available'}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </TableCell>
                   <TableCell>{getSubscriptionStatus(restaurant)}</TableCell>
                   <TableCell>
-                    {new Date(restaurant.created_at).toLocaleDateString()}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger className="cursor-pointer">
+                          {new Date(restaurant.created_at).toLocaleDateString()}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Created: {new Date(restaurant.created_at).toLocaleString()}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openEditDialog(restaurant)}
-                      className="hover:bg-blue-50"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteRestaurant(restaurant.id)}
-                      className="hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openSubscriptionDialog(restaurant)}
-                      className="hover:bg-blue-50"
-                    >
-                      <CreditCard className="h-4 w-4" />
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openEditDialog(restaurant)}
+                            className="hover:bg-blue-50"
+                          >
+                            <Pencil className="h-4 w-4 text-blue-500" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Edit Restaurant</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteRestaurant(restaurant.id)}
+                            className="hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Delete Restaurant</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openSubscriptionDialog(restaurant)}
+                            className="hover:bg-blue-50"
+                          >
+                            <CreditCard className="h-4 w-4 text-blue-500" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Manage Subscription</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </TableCell>
                 </TableRow>
               ))
@@ -511,40 +574,46 @@ const Restaurants = () => {
       </Dialog>
 
       <Dialog open={isSubscriptionDialogOpen} onOpenChange={setIsSubscriptionDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh]">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
               Manage Subscription for {selectedRestaurant?.name}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            {subscriptionPlans.map((plan) => (
-              <div
-                key={plan.id}
-                className="p-4 border rounded-lg hover:border-blue-500 cursor-pointer transition-colors"
-                onClick={() => handleSubscribe(selectedRestaurant!.id, plan.id)}
-              >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="font-semibold">{plan.name}</h3>
-                    <p className="text-sm text-gray-600">{plan.description}</p>
+          <ScrollArea className="h-[60vh] pr-4">
+            <div className="space-y-4">
+              {subscriptionPlans.map((plan) => (
+                <div
+                  key={plan.id}
+                  className="p-4 border rounded-lg hover:border-blue-500 cursor-pointer transition-colors bg-gradient-to-r from-gray-50 to-white hover:from-blue-50 hover:to-indigo-50"
+                  onClick={() => handleSubscribe(selectedRestaurant!.id, plan.id)}
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="font-semibold text-lg bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                        {plan.name}
+                      </h3>
+                      <p className="text-sm text-gray-600">{plan.description}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-2xl bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                        ${plan.price}
+                      </p>
+                      <p className="text-sm text-gray-600">per {plan.interval}</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold">${plan.price}</p>
-                    <p className="text-sm text-gray-600">per {plan.interval}</p>
+                  <div className="mt-2">
+                    <p className="text-sm font-semibold text-gray-700">Features:</p>
+                    <ul className="list-disc list-inside text-sm text-gray-600">
+                      {plan.features.map((feature, index) => (
+                        <li key={index}>{feature}</li>
+                      ))}
+                    </ul>
                   </div>
                 </div>
-                <div className="mt-2">
-                  <p className="text-sm font-semibold">Features:</p>
-                  <ul className="list-disc list-inside text-sm text-gray-600">
-                    {plan.features.map((feature, index) => (
-                      <li key={index}>{feature}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </div>
