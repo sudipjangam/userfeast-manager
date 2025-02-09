@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Input } from "@/components/ui/input";
@@ -27,21 +26,14 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-import { Pencil, Trash2, Plus } from 'lucide-react';
+import { Pencil, Trash2, Plus, CreditCard } from 'lucide-react';
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-
-interface Restaurant {
-  id: string;
-  name: string;
-  address: string;
-  email: string | null;
-  phone: string | null;
-  created_at: string;
-}
+import { Badge } from "@/components/ui/badge";
+import { Restaurant, SubscriptionPlan } from './types';
 
 interface RestaurantFormData {
   name: string;
@@ -55,24 +47,55 @@ const Restaurants = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingRestaurant, setEditingRestaurant] = useState<Restaurant | null>(null);
+  const [isSubscriptionDialogOpen, setIsSubscriptionDialogOpen] = useState(false);
+  const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
+  const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
   const { toast } = useToast();
   const form = useForm<RestaurantFormData>();
 
   useEffect(() => {
     fetchRestaurants();
+    fetchSubscriptionPlans();
   }, []);
+
+  const fetchSubscriptionPlans = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('price');
+
+      if (error) throw error;
+      setSubscriptionPlans(data);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error fetching subscription plans",
+        description: error instanceof Error ? error.message : "An error occurred",
+      });
+    }
+  };
 
   const fetchRestaurants = async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('restaurants')
-        .select('*')
+        .select(`
+          *,
+          subscription:restaurant_subscriptions(
+            *,
+            plan:subscription_plans(*)
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setRestaurants(data || []);
+      setRestaurants(data.map(restaurant => ({
+        ...restaurant,
+        subscription: restaurant.subscription?.[0]
+      })) || []);
     } catch (error) {
       toast({
         variant: "destructive",
@@ -161,6 +184,96 @@ const Restaurants = () => {
     }
   };
 
+  const handleSubscribe = async (restaurantId: string, planId: string) => {
+    try {
+      const startDate = new Date();
+      const endDate = new Date();
+      const plan = subscriptionPlans.find(p => p.id === planId);
+      
+      if (!plan) throw new Error("Plan not found");
+      
+      // Calculate end date based on plan interval
+      switch (plan.interval) {
+        case 'monthly':
+          endDate.setMonth(endDate.getMonth() + 1);
+          break;
+        case 'quarterly':
+          endDate.setMonth(endDate.getMonth() + 3);
+          break;
+        case 'half_yearly':
+          endDate.setMonth(endDate.getMonth() + 6);
+          break;
+        case 'yearly':
+          endDate.setFullYear(endDate.getFullYear() + 1);
+          break;
+      }
+
+      const { error } = await supabase
+        .from('restaurant_subscriptions')
+        .upsert({
+          restaurant_id: restaurantId,
+          plan_id: planId,
+          status: 'active',
+          current_period_start: startDate.toISOString(),
+          current_period_end: endDate.toISOString(),
+          cancel_at_period_end: false
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Subscription updated successfully",
+        description: "The restaurant's subscription has been updated.",
+      });
+      
+      fetchRestaurants();
+      setIsSubscriptionDialogOpen(false);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error updating subscription",
+        description: error instanceof Error ? error.message : "An error occurred",
+      });
+    }
+  };
+
+  const getSubscriptionStatus = (restaurant: Restaurant) => {
+    if (!restaurant.subscription) {
+      return <Badge variant="destructive">No Subscription</Badge>;
+    }
+
+    const endDate = new Date(restaurant.subscription.current_period_end);
+    const now = new Date();
+
+    if (restaurant.subscription.status === 'active' && endDate > now) {
+      return (
+        <HoverCard>
+          <HoverCardTrigger>
+            <Badge variant="success" className="bg-green-500">
+              Active until {endDate.toLocaleDateString()}
+            </Badge>
+          </HoverCardTrigger>
+          <HoverCardContent>
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold">Subscription Details</h4>
+              <p><strong>Plan:</strong> {restaurant.subscription.plan?.name}</p>
+              <p><strong>Price:</strong> ${restaurant.subscription.plan?.price}/
+                {restaurant.subscription.plan?.interval}</p>
+              <p><strong>Features:</strong></p>
+              <ul className="list-disc pl-4">
+                {restaurant.subscription.plan?.features.map((feature, index) => (
+                  <li key={index} className="text-sm">{feature}</li>
+                ))}
+              </ul>
+            </div>
+          </HoverCardContent>
+        </HoverCard>
+      );
+    }
+
+    return <Badge variant="destructive">Expired</Badge>;
+  };
+
   const filteredRestaurants = restaurants.filter(restaurant => 
     restaurant.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     restaurant.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -188,6 +301,11 @@ const Restaurants = () => {
       phone: '',
     });
     setIsDialogOpen(true);
+  };
+
+  const openSubscriptionDialog = (restaurant: Restaurant) => {
+    setSelectedRestaurant(restaurant);
+    setIsSubscriptionDialogOpen(true);
   };
 
   return (
@@ -222,6 +340,7 @@ const Restaurants = () => {
               <TableHead>Address</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Phone</TableHead>
+              <TableHead>Subscription</TableHead>
               <TableHead>Created At</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -229,13 +348,13 @@ const Restaurants = () => {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">
+                <TableCell colSpan={7} className="text-center">
                   Loading...
                 </TableCell>
               </TableRow>
             ) : filteredRestaurants.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">
+                <TableCell colSpan={7} className="text-center">
                   No restaurants found
                 </TableCell>
               </TableRow>
@@ -267,6 +386,7 @@ const Restaurants = () => {
                   <TableCell>{restaurant.address}</TableCell>
                   <TableCell>{restaurant.email || 'N/A'}</TableCell>
                   <TableCell>{restaurant.phone || 'N/A'}</TableCell>
+                  <TableCell>{getSubscriptionStatus(restaurant)}</TableCell>
                   <TableCell>
                     {new Date(restaurant.created_at).toLocaleDateString()}
                   </TableCell>
@@ -286,6 +406,14 @@ const Restaurants = () => {
                       className="hover:bg-red-50"
                     >
                       <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => openSubscriptionDialog(restaurant)}
+                      className="hover:bg-blue-50"
+                    >
+                      <CreditCard className="h-4 w-4" />
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -377,6 +505,44 @@ const Restaurants = () => {
               </div>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isSubscriptionDialogOpen} onOpenChange={setIsSubscriptionDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>
+              Manage Subscription for {selectedRestaurant?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {subscriptionPlans.map((plan) => (
+              <div
+                key={plan.id}
+                className="p-4 border rounded-lg hover:border-blue-500 cursor-pointer transition-colors"
+                onClick={() => handleSubscribe(selectedRestaurant!.id, plan.id)}
+              >
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="font-semibold">{plan.name}</h3>
+                    <p className="text-sm text-gray-600">{plan.description}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold">${plan.price}</p>
+                    <p className="text-sm text-gray-600">per {plan.interval}</p>
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <p className="text-sm font-semibold">Features:</p>
+                  <ul className="list-disc list-inside text-sm text-gray-600">
+                    {plan.features.map((feature, index) => (
+                      <li key={index}>{feature}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ))}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

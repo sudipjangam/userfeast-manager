@@ -15,6 +15,7 @@ export interface Restaurant {
   address: string | null;
   email: string | null;
   phone: string | null;
+  subscription?: RestaurantSubscription;
 }
 
 export interface UserFormData {
@@ -27,4 +28,25 @@ export interface UserFormData {
   restaurant_address?: string;
   restaurant_email?: string;
   restaurant_phone?: string;
+}
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  interval: 'monthly' | 'quarterly' | 'half_yearly' | 'yearly';
+  features: string[];
+  is_active: boolean;
+}
+
+export interface RestaurantSubscription {
+  id: string;
+  restaurant_id: string;
+  plan_id: string;
+  status: 'active' | 'cancelled' | 'expired' | 'pending';
+  current_period_start: string;
+  current_period_end: string;
+  cancel_at_period_end: boolean;
+  plan?: SubscriptionPlan;
 }
