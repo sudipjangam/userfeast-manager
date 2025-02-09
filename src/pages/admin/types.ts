@@ -16,7 +16,7 @@ export interface Restaurant {
   email: string | null;
   phone: string | null;
   created_at: string;
-  subscription?: RestaurantSubscription;
+  subscription?: RestaurantSubscription | null;
 }
 
 export interface UserFormData {

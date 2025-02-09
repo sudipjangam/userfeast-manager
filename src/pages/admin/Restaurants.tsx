@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Input } from "@/components/ui/input";
@@ -292,7 +291,7 @@ const Restaurants = () => {
               variant="outline" 
               className="bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600"
             >
-              Active until {endDate.toLocaleDateString()}
+              {restaurant.subscription.plan?.name} - Active until {endDate.toLocaleDateString()}
             </Badge>
           </HoverCardTrigger>
           <HoverCardContent className="w-80">
@@ -302,7 +301,7 @@ const Restaurants = () => {
               </h4>
               <p className="font-bold text-gray-700">Plan: {restaurant.subscription.plan?.name}</p>
               <p className="font-bold text-gray-700">
-                Price: ${restaurant.subscription.plan?.price}/
+                Price: ₹{restaurant.subscription.plan?.price}/
                 {restaurant.subscription.plan?.interval}
               </p>
               <p className="font-bold text-gray-700">Features:</p>
@@ -642,7 +641,7 @@ const Restaurants = () => {
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-2xl bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                        ${plan.price}
+                        ₹{plan.price}
                       </p>
                       <p className="text-sm text-gray-600">per {plan.interval}</p>
                     </div>
