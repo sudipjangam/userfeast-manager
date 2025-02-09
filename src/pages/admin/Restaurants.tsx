@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Input } from "@/components/ui/input";
@@ -310,6 +309,28 @@ const Restaurants = () => {
     restaurant.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     restaurant.phone?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const openCreateDialog = () => {
+    setEditingRestaurant(null);
+    form.reset();
+    setIsDialogOpen(true);
+  };
+
+  const openEditDialog = (restaurant: Restaurant) => {
+    setEditingRestaurant(restaurant);
+    form.reset({
+      name: restaurant.name,
+      address: restaurant.address || '',
+      email: restaurant.email || '',
+      phone: restaurant.phone || '',
+    });
+    setIsDialogOpen(true);
+  };
+
+  const openSubscriptionDialog = (restaurant: Restaurant) => {
+    setSelectedRestaurant(restaurant);
+    setIsSubscriptionDialogOpen(true);
+  };
 
   return (
     <div className="space-y-4 p-8 bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen">
