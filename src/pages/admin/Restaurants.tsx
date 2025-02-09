@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Input } from "@/components/ui/input";
@@ -225,6 +226,8 @@ const Restaurants = () => {
           current_period_start: startDate.toISOString(),
           current_period_end: endDate.toISOString(),
           cancel_at_period_end: false
+        }, {
+          onConflict: 'restaurant_id'
         });
 
       if (error) throw error;
@@ -234,7 +237,28 @@ const Restaurants = () => {
         description: "The restaurant's subscription has been updated.",
       });
       
-      fetchRestaurants();
+      // Immediately fetch the updated restaurant data to refresh the UI
+      const { data: updatedRestaurant, error: fetchError } = await supabase
+        .from('restaurants')
+        .select(`
+          *,
+          subscription:restaurant_subscriptions(
+            *,
+            plan:subscription_plans(*)
+          )
+        `)
+        .eq('id', restaurantId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Update the restaurants list with the new subscription data
+      setRestaurants(restaurants.map(restaurant => 
+        restaurant.id === restaurantId 
+          ? { ...updatedRestaurant, subscription: updatedRestaurant.subscription[0] }
+          : restaurant
+      ));
+      
       setIsSubscriptionDialogOpen(false);
     } catch (error) {
       toast({
