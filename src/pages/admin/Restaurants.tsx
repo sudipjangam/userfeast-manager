@@ -26,7 +26,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-import { Pencil, Trash2, Plus, CreditCard, Info } from 'lucide-react';
+import { Pencil, Trash2, Plus, CreditCard, Info, Menu } from 'lucide-react';
 import {
   HoverCard,
   HoverCardContent,
@@ -41,6 +41,15 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Restaurant, SubscriptionPlan } from './types';
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useIsMobile } from '@/hooks/use-mobile';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 interface RestaurantFormData {
   name: string;
@@ -50,6 +59,7 @@ interface RestaurantFormData {
 }
 
 const Restaurants = () => {
+  const isMobile = useIsMobile();
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -359,13 +369,220 @@ const Restaurants = () => {
     setIsSubscriptionDialogOpen(true);
   };
 
+  const renderRestaurantCard = (restaurant: Restaurant) => (
+    <div key={restaurant.id} className="bg-white rounded-lg shadow-md p-4 space-y-3">
+      <div className="flex justify-between items-start">
+        <div>
+          <h3 className="font-semibold text-lg">{restaurant.name}</h3>
+          <p className="text-sm text-gray-600">{restaurant.address || 'No address'}</p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => openEditDialog(restaurant)}
+            className="hover:bg-blue-50"
+          >
+            <Pencil className="h-4 w-4 text-blue-500" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleDeleteRestaurant(restaurant.id)}
+            className="hover:bg-red-50"
+          >
+            <Trash2 className="h-4 w-4 text-red-500" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => openSubscriptionDialog(restaurant)}
+            className="hover:bg-blue-50"
+          >
+            <CreditCard className="h-4 w-4 text-blue-500" />
+          </Button>
+        </div>
+      </div>
+      <div className="space-y-2">
+        <p className="text-sm">
+          <span className="font-medium">Email:</span> {restaurant.email || 'N/A'}
+        </p>
+        <p className="text-sm">
+          <span className="font-medium">Phone:</span> {restaurant.phone || 'N/A'}
+        </p>
+        <p className="text-sm">
+          <span className="font-medium">Created:</span> {new Date(restaurant.created_at).toLocaleDateString()}
+        </p>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">Status:</span>
+          {getSubscriptionStatus(restaurant)}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderDesktopTable = () => (
+    <div className="rounded-lg border bg-white shadow-lg overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100">
+            <TableHead className="font-bold text-gray-700">Name</TableHead>
+            <TableHead className="font-bold text-gray-700">Address</TableHead>
+            <TableHead className="font-bold text-gray-700">Email</TableHead>
+            <TableHead className="font-bold text-gray-700">Phone</TableHead>
+            <TableHead className="font-bold text-gray-700">Subscription</TableHead>
+            <TableHead className="font-bold text-gray-700">Created At</TableHead>
+            <TableHead className="text-right font-bold text-gray-700">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {loading ? (
+            <TableRow>
+              <TableCell colSpan={7} className="text-center">
+                Loading...
+              </TableCell>
+            </TableRow>
+          ) : filteredRestaurants.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={7} className="text-center">
+                No restaurants found
+              </TableCell>
+            </TableRow>
+          ) : (
+            filteredRestaurants.map((restaurant) => (
+              <TableRow 
+                key={restaurant.id}
+                className="hover:bg-gray-50 transition-colors"
+              >
+                <TableCell>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger className="cursor-pointer font-medium text-gray-700">
+                        {restaurant.name}
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Restaurant ID: {restaurant.id}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </TableCell>
+                <TableCell>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger className="cursor-pointer">
+                        {restaurant.address}
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{restaurant.address}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </TableCell>
+                <TableCell>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger className="cursor-pointer">
+                        {restaurant.email || 'N/A'}
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Email: {restaurant.email || 'Not Available'}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </TableCell>
+                <TableCell>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger className="cursor-pointer">
+                        {restaurant.phone || 'N/A'}
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Phone: {restaurant.phone || 'Not Available'}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </TableCell>
+                <TableCell>{getSubscriptionStatus(restaurant)}</TableCell>
+                <TableCell>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger className="cursor-pointer">
+                        {new Date(restaurant.created_at).toLocaleDateString()}
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Created: {new Date(restaurant.created_at).toLocaleString()}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </TableCell>
+                <TableCell className="text-right">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEditDialog(restaurant)}
+                          className="hover:bg-blue-50"
+                        >
+                          <Pencil className="h-4 w-4 text-blue-500" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Edit Restaurant</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteRestaurant(restaurant.id)}
+                          className="hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Delete Restaurant</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openSubscriptionDialog(restaurant)}
+                          className="hover:bg-blue-50"
+                        >
+                          <CreditCard className="h-4 w-4 text-blue-500" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Manage Subscription</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
   return (
-    <div className="space-y-4 p-8 bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+    <div className="space-y-4 p-4 md:p-8 bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
           Restaurants Management
         </h1>
-        <div className="flex gap-4">
+        <div className="flex flex-col md:flex-row gap-4">
           <Input
             type="search"
             placeholder="Search restaurants..."
@@ -383,158 +600,19 @@ const Restaurants = () => {
         </div>
       </div>
 
-      <div className="rounded-lg border bg-white shadow-lg overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100">
-              <TableHead className="font-bold text-gray-700">Name</TableHead>
-              <TableHead className="font-bold text-gray-700">Address</TableHead>
-              <TableHead className="font-bold text-gray-700">Email</TableHead>
-              <TableHead className="font-bold text-gray-700">Phone</TableHead>
-              <TableHead className="font-bold text-gray-700">Subscription</TableHead>
-              <TableHead className="font-bold text-gray-700">Created At</TableHead>
-              <TableHead className="text-right font-bold text-gray-700">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center">
-                  Loading...
-                </TableCell>
-              </TableRow>
-            ) : filteredRestaurants.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center">
-                  No restaurants found
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredRestaurants.map((restaurant) => (
-                <TableRow 
-                  key={restaurant.id}
-                  className="hover:bg-gray-50 transition-colors"
-                >
-                  <TableCell>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger className="cursor-pointer font-medium text-gray-700">
-                          {restaurant.name}
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Restaurant ID: {restaurant.id}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </TableCell>
-                  <TableCell>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger className="cursor-pointer">
-                          {restaurant.address}
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>{restaurant.address}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </TableCell>
-                  <TableCell>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger className="cursor-pointer">
-                          {restaurant.email || 'N/A'}
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Email: {restaurant.email || 'Not Available'}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </TableCell>
-                  <TableCell>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger className="cursor-pointer">
-                          {restaurant.phone || 'N/A'}
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Phone: {restaurant.phone || 'Not Available'}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </TableCell>
-                  <TableCell>{getSubscriptionStatus(restaurant)}</TableCell>
-                  <TableCell>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger className="cursor-pointer">
-                          {new Date(restaurant.created_at).toLocaleDateString()}
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Created: {new Date(restaurant.created_at).toLocaleString()}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openEditDialog(restaurant)}
-                            className="hover:bg-blue-50"
-                          >
-                            <Pencil className="h-4 w-4 text-blue-500" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Edit Restaurant</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteRestaurant(restaurant.id)}
-                            className="hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Delete Restaurant</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openSubscriptionDialog(restaurant)}
-                            className="hover:bg-blue-50"
-                          >
-                            <CreditCard className="h-4 w-4 text-blue-500" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Manage Subscription</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      {isMobile ? (
+        <div className="grid grid-cols-1 gap-4">
+          {loading ? (
+            <div className="text-center p-4">Loading...</div>
+          ) : filteredRestaurants.length === 0 ? (
+            <div className="text-center p-4">No restaurants found</div>
+          ) : (
+            filteredRestaurants.map(restaurant => renderRestaurantCard(restaurant))
+          )}
+        </div>
+      ) : (
+        renderDesktopTable()
+      )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
