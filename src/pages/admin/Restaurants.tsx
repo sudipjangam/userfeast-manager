@@ -108,15 +108,28 @@ const Restaurants = () => {
           )
         `);
 
+      console.log('Raw fetched data:', data); // Debug log
+
       if (error) throw error;
 
-      // Map the data to handle the subscription array
-      const mappedData = data?.map(restaurant => ({
-        ...restaurant,
-        subscription: restaurant.subscription?.[0] || null
-      })) || [];
+      // Map the data to handle the subscription object
+      const mappedData = data?.map(restaurant => {
+        // Since subscription is already an array and contains the full object structure
+        // we just need to take the first item if it exists
+        const subscriptionData = Array.isArray(restaurant.subscription) && restaurant.subscription.length > 0
+          ? {
+              ...restaurant.subscription[0],
+              plan: restaurant.subscription[0].plan // Keep the plan data as is
+            }
+          : null;
 
-      console.log('Fetched restaurants:', mappedData); // Debug log
+        return {
+          ...restaurant,
+          subscription: subscriptionData
+        };
+      }) || [];
+
+      console.log('Mapped restaurants:', mappedData); // Debug log
       setRestaurants(mappedData);
     } catch (error) {
       toast({
