@@ -208,6 +208,53 @@ const Restaurants = () => {
     }
   };
 
+  const handleSubscriptionAction = async (restaurantId: string, action: 'cancel' | 'reactivate') => {
+    try {
+      if (action === 'cancel') {
+        const { error } = await supabase
+          .from('restaurant_subscriptions')
+          .update({
+            status: 'inactive',
+            cancel_at_period_end: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('restaurant_id', restaurantId);
+
+        if (error) throw error;
+
+        toast({
+          title: "Subscription cancelled",
+          description: "The subscription will be cancelled at the end of the billing period.",
+        });
+      } else {
+        const { error } = await supabase
+          .from('restaurant_subscriptions')
+          .update({
+            status: 'active',
+            cancel_at_period_end: false,
+            updated_at: new Date().toISOString()
+          })
+          .eq('restaurant_id', restaurantId);
+
+        if (error) throw error;
+
+        toast({
+          title: "Subscription reactivated",
+          description: "The subscription has been reactivated.",
+        });
+      }
+
+      // Refresh the restaurants data
+      await fetchRestaurants();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error updating subscription",
+        description: error instanceof Error ? error.message : "An error occurred",
+      });
+    }
+  };
+
   const handleSubscribe = async (restaurantId: string, planId: string) => {
     try {
       const startDate = new Date();
@@ -252,28 +299,8 @@ const Restaurants = () => {
         description: "The restaurant's subscription has been updated.",
       });
       
-      // Immediately fetch the updated restaurant data to refresh the UI
-      const { data: updatedRestaurant, error: fetchError } = await supabase
-        .from('restaurants')
-        .select(`
-          *,
-          subscription:restaurant_subscriptions(
-            *,
-            plan:subscription_plans(*)
-          )
-        `)
-        .eq('id', restaurantId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      // Update the restaurants list with the new subscription data
-      setRestaurants(restaurants.map(restaurant => 
-        restaurant.id === restaurantId 
-          ? { ...updatedRestaurant, subscription: updatedRestaurant.subscription[0] }
-          : restaurant
-      ));
-      
+      // Immediately fetch the updated data
+      await fetchRestaurants();
       setIsSubscriptionDialogOpen(false);
     } catch (error) {
       toast({
@@ -287,48 +314,71 @@ const Restaurants = () => {
   const getSubscriptionStatus = (restaurant: Restaurant) => {
     if (!restaurant.subscription) {
       return (
-        <Badge 
-          variant="destructive" 
-          className="bg-gradient-to-r from-red-400 to-orange-400 hover:from-red-500 hover:to-orange-500 text-white border-0"
-        >
-          No Subscription
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge 
+            variant="destructive" 
+            className="bg-gradient-to-r from-red-400 to-orange-400 hover:from-red-500 hover:to-orange-500 text-white border-0"
+          >
+            No Subscription
+          </Badge>
+        </div>
       );
     }
 
     const endDate = new Date(restaurant.subscription.current_period_end);
     const now = new Date();
 
-    if (restaurant.subscription.status === 'active' && endDate > now) {
+    if (restaurant.subscription.status === 'active') {
       return (
-        <HoverCard>
-          <HoverCardTrigger>
-            <Badge 
-              variant="outline" 
-              className="bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-500 hover:to-teal-500 text-white border-0"
+        <div className="flex items-center gap-2">
+          <HoverCard>
+            <HoverCardTrigger>
+              <Badge 
+                variant="outline" 
+                className="bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-500 hover:to-teal-500 text-white border-0"
+              >
+                {restaurant.subscription.plan?.name} - Active until {endDate.toLocaleDateString()}
+              </Badge>
+            </HoverCardTrigger>
+            <HoverCardContent className="w-80">
+              <div className="space-y-2">
+                <h4 className="text-sm font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                  Subscription Details
+                </h4>
+                <p className="font-bold text-gray-700">Plan: {restaurant.subscription.plan?.name}</p>
+                <p className="font-bold text-gray-700">
+                  Price: ₹{restaurant.subscription.plan?.price}/
+                  {restaurant.subscription.plan?.interval}
+                </p>
+                <p className="font-bold text-gray-700">Features:</p>
+                <ul className="list-disc pl-4">
+                  {restaurant.subscription.plan?.features.map((feature, index) => (
+                    <li key={index} className="text-sm text-gray-600">{feature}</li>
+                  ))}
+                </ul>
+              </div>
+            </HoverCardContent>
+          </HoverCard>
+          {restaurant.subscription.cancel_at_period_end ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleSubscriptionAction(restaurant.id, 'reactivate')}
+              className="ml-2"
             >
-              {restaurant.subscription.plan?.name} - Active until {endDate.toLocaleDateString()}
-            </Badge>
-          </HoverCardTrigger>
-          <HoverCardContent className="w-80">
-            <div className="space-y-2">
-              <h4 className="text-sm font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                Subscription Details
-              </h4>
-              <p className="font-bold text-gray-700">Plan: {restaurant.subscription.plan?.name}</p>
-              <p className="font-bold text-gray-700">
-                Price: ₹{restaurant.subscription.plan?.price}/
-                {restaurant.subscription.plan?.interval}
-              </p>
-              <p className="font-bold text-gray-700">Features:</p>
-              <ul className="list-disc pl-4">
-                {restaurant.subscription.plan?.features.map((feature, index) => (
-                  <li key={index} className="text-sm text-gray-600">{feature}</li>
-                ))}
-              </ul>
-            </div>
-          </HoverCardContent>
-        </HoverCard>
+              Reactivate
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleSubscriptionAction(restaurant.id, 'cancel')}
+              className="ml-2 text-red-500 hover:text-red-600"
+            >
+              Cancel
+            </Button>
+          )}
+        </div>
       );
     }
 
