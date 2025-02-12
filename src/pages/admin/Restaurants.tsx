@@ -113,21 +113,10 @@ const Restaurants = () => {
       if (error) throw error;
 
       // Map the data to handle the subscription object
-      const mappedData = data?.map(restaurant => {
-        // Since subscription is already an array and contains the full object structure
-        // we just need to take the first item if it exists
-        const subscriptionData = Array.isArray(restaurant.subscription) && restaurant.subscription.length > 0
-          ? {
-              ...restaurant.subscription[0],
-              plan: restaurant.subscription[0].plan // Keep the plan data as is
-            }
-          : null;
-
-        return {
-          ...restaurant,
-          subscription: subscriptionData
-        };
-      }) || [];
+      const mappedData = data?.map(restaurant => ({
+        ...restaurant,
+        subscription: restaurant.subscription || null
+      })) || [];
 
       console.log('Mapped restaurants:', mappedData); // Debug log
       setRestaurants(mappedData);
