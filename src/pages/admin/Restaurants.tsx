@@ -289,7 +289,7 @@ const Restaurants = () => {
       return (
         <Badge 
           variant="destructive" 
-          className="bg-gradient-to-r from-red-500/80 to-orange-500/80 hover:from-red-600 hover:to-orange-600"
+          className="bg-gradient-to-r from-red-400 to-orange-400 hover:from-red-500 hover:to-orange-500 text-white border-0"
         >
           No Subscription
         </Badge>
@@ -305,14 +305,14 @@ const Restaurants = () => {
           <HoverCardTrigger>
             <Badge 
               variant="outline" 
-              className="bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600"
+              className="bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-500 hover:to-teal-500 text-white border-0"
             >
               {restaurant.subscription.plan?.name} - Active until {endDate.toLocaleDateString()}
             </Badge>
           </HoverCardTrigger>
           <HoverCardContent className="w-80">
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              <h4 className="text-sm font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
                 Subscription Details
               </h4>
               <p className="font-bold text-gray-700">Plan: {restaurant.subscription.plan?.name}</p>
@@ -335,7 +335,7 @@ const Restaurants = () => {
     return (
       <Badge 
         variant="destructive"
-        className="bg-gradient-to-r from-red-500/80 to-orange-500/80 hover:from-red-600 hover:to-orange-600"
+        className="bg-gradient-to-r from-red-400 to-orange-400 hover:from-red-500 hover:to-orange-500 text-white border-0"
       >
         Expired
       </Badge>
@@ -372,7 +372,7 @@ const Restaurants = () => {
   };
 
   const renderRestaurantCard = (restaurant: Restaurant) => (
-    <div key={restaurant.id} className="bg-white rounded-lg shadow-md p-4 space-y-3">
+    <div key={restaurant.id} className="bg-gradient-to-br from-white via-gray-50 to-gray-100 rounded-lg shadow-md p-4 space-y-3">
       <div className="flex justify-between items-start">
         <div>
           <h3 className="font-semibold text-lg">{restaurant.name}</h3>
@@ -424,10 +424,10 @@ const Restaurants = () => {
   );
 
   const renderDesktopTable = () => (
-    <div className="rounded-lg border bg-white shadow-lg overflow-hidden">
+    <div className="rounded-lg border bg-gradient-to-br from-white via-gray-50 to-gray-100 shadow-lg overflow-hidden">
       <Table>
         <TableHeader>
-          <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100">
+          <TableRow className="bg-gradient-to-r from-gray-100 via-gray-50 to-white">
             <TableHead className="font-bold text-gray-700">Name</TableHead>
             <TableHead className="font-bold text-gray-700">Address</TableHead>
             <TableHead className="font-bold text-gray-700">Email</TableHead>
@@ -454,7 +454,7 @@ const Restaurants = () => {
             filteredRestaurants.map((restaurant) => (
               <TableRow 
                 key={restaurant.id}
-                className="hover:bg-gray-50 transition-colors"
+                className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-colors"
               >
                 <TableCell>
                   <TooltipProvider>
@@ -579,7 +579,7 @@ const Restaurants = () => {
   );
 
   return (
-    <div className="space-y-4 p-4 md:p-8 bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen">
+    <div className="space-y-4 p-4 md:p-8 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
           Restaurants Management
