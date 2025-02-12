@@ -247,6 +247,7 @@ const Restaurants = () => {
       // Refresh the restaurants data
       await fetchRestaurants();
     } catch (error) {
+      console.error('Subscription action error:', error);
       toast({
         variant: "destructive",
         title: "Error updating subscription",
