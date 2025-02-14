@@ -630,9 +630,9 @@ const Restaurants = () => {
   );
 
   return (
-    <div className="space-y-4 p-4 md:p-8 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+    <div className="space-y-4 p-8 bg-gradient-to-br from-indigo-50 to-blue-50 min-h-screen">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
           Restaurants Management
         </h1>
         <div className="flex flex-col md:flex-row gap-4">
