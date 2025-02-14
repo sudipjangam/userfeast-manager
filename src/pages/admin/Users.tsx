@@ -70,16 +70,19 @@ const Users = () => {
         restaurantId = restaurant.id;
       }
 
-      // Create auth user first
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      // First sign up the user using standard auth
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
-        email_confirm: true
       });
 
-      if (authError) throw authError;
+      if (signUpError) throw signUpError;
 
-      // Then create the profile
+      if (!authData.user) {
+        throw new Error('Failed to create user');
+      }
+
+      // Then update the profile
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
