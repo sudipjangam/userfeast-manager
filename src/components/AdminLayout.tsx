@@ -1,9 +1,9 @@
-
 import { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Users, Store, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { ChatBot } from './ChatBot';
 
 const AdminLayout = () => {
   const location = useLocation();
@@ -75,6 +75,8 @@ const AdminLayout = () => {
           </div>
         </main>
       </div>
+
+      <ChatBot />
     </div>
   );
 };
