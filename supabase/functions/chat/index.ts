@@ -14,46 +14,79 @@ serve(async (req) => {
 
   try {
     const { message } = await req.json();
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
-    if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured');
+    if (!geminiApiKey) {
+      throw new Error('Gemini API key not configured');
     }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
+        contents: [
           {
-            role: 'system',
-            content: 'You are a helpful restaurant management assistant. You help users with questions about restaurant management, staff, and operations. Keep your responses concise and professional.'
+            role: "user",
+            parts: [
+              {
+                text: "You are a helpful restaurant management assistant. You help users with questions about restaurant management, staff, and operations. Keep your responses concise and professional."
+              }
+            ]
           },
-          { role: 'user', content: message }
+          {
+            role: "user",
+            parts: [
+              {
+                text: message
+              }
+            ]
+          }
         ],
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 1024,
+        },
+        safetySettings: [
+          {
+            category: "HARM_CATEGORY_HARASSMENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_HATE_SPEECH",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          }
+        ]
       }),
     });
 
     const data = await response.json();
     
-    // Add proper error handling for OpenAI API response
+    // Add proper error handling for Gemini API response
     if (!response.ok) {
-      console.error('OpenAI API error:', data);
-      throw new Error(data.error?.message || 'Failed to get response from OpenAI');
+      console.error('Gemini API error:', data);
+      throw new Error(data.error?.message || 'Failed to get response from Gemini');
     }
 
     // Validate the response structure
-    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
       console.error('Unexpected API response structure:', data);
-      throw new Error('Received invalid response format from OpenAI');
+      throw new Error('Received invalid response format from Gemini');
     }
 
     return new Response(JSON.stringify({ 
-      reply: data.choices[0].message.content 
+      reply: data.candidates[0].content.parts[0].text 
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
