@@ -39,6 +39,19 @@ serve(async (req) => {
     });
 
     const data = await response.json();
+    
+    // Add proper error handling for OpenAI API response
+    if (!response.ok) {
+      console.error('OpenAI API error:', data);
+      throw new Error(data.error?.message || 'Failed to get response from OpenAI');
+    }
+
+    // Validate the response structure
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error('Unexpected API response structure:', data);
+      throw new Error('Received invalid response format from OpenAI');
+    }
+
     return new Response(JSON.stringify({ 
       reply: data.choices[0].message.content 
     }), {
@@ -46,8 +59,12 @@ serve(async (req) => {
     });
 
   } catch (error) {
+    console.error('Edge function error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message || 'An unexpected error occurred',
+        details: error.toString()
+      }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
