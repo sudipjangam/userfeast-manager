@@ -36,11 +36,14 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0EA5E9] via-[#33C3F0] to-[#6366F1] py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#8B5CF6] via-[#D946EF] to-[#F97316] py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 bg-white/10 backdrop-blur-lg rounded-xl p-8 shadow-2xl border border-white/20">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
-            Restaurant Admin
+          <h1 className="mt-6 text-center text-4xl font-extrabold text-white">
+            Swadeshi Solutions
+          </h1>
+          <h2 className="mt-2 text-center text-2xl font-bold text-white/90">
+            Admin Tool
           </h2>
           <p className="mt-2 text-center text-sm text-white/80">
             Sign in to access your dashboard
@@ -73,7 +76,7 @@ export default function Auth() {
           <div>
             <Button
               type="submit"
-              className="w-full bg-white text-blue-600 hover:bg-white/90 transition-colors"
+              className="w-full bg-white text-purple-600 hover:bg-white/90 transition-colors"
               disabled={loading}
             >
               {loading ? 'Signing in...' : 'Sign in'}
